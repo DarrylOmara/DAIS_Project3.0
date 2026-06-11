@@ -52,7 +52,29 @@ python run_all.py
 - **Hard Rules**: Never sell below MA20 (trend protection) or below average cost basis (no loss-taking).
 - **Session Close**: Liquidate all remaining positions `market_close_buffer_min` before market close.
 
-**Extending & Next Steps**
+**Output Files Generated**
+
+For each ticker, the pipeline generates a dedicated directory (`outputs/DAIS_Deliverables/{TICKER}/`) containing:
+
+- `{TICKER}_ledger.csv` — Bar-by-bar state tracking (prices, cash, inventory, portfolio value)
+- `{TICKER}_metrics.csv` — Performance metrics (Sharpe ratio, Sortino, beta, drawdown, etc.)
+- `{TICKER}_trades.csv` — **Detailed trade execution log** with all entry/exit details:
+  - Trade ID, timestamp, side (BUY/SELL), trade type (core/base/liquidation)
+  - Shares, requested price, execution price, slippage applied
+  - Amount deployed/received, cost basis, realized P&L
+  - Cash and inventory after each trade, average cost basis
+- `{TICKER}_trade_summary.csv` — Trade execution summary statistics:
+  - Total trades, buy/sell counts, total shares and capital deployed
+  - Total P&L, win rate, profitable vs. losing trades, average P&L per trade
+- `{TICKER}_execution_topology.png` — Buy/sell signal visualization
+- `{TICKER}_equity_curve.png` — Portfolio value over time
+- `{TICKER}_inventory_density.png` — Position sizing and inventory levels
+
+**Summary Reports (Aggregated)**
+- `DAIS_Executive_Performance_Report.pdf` — Multi-ticker performance summary
+- `DAIS_Performance_Executive_Deck.pptx` — Slide deck with key metrics and charts
+- `DAIS_Intraday_Performance_Dashboard.html` — Interactive web dashboard
+- `DAIS_Intraday_Operational_Manual.docx` — Comprehensive operational documentation
 - Use a paid intraday data provider (higher fidelity) by replacing `fetch_intraday()` in [src/src/data_fetcher.py](src/src/data_fetcher.py).
 - Add a live broker adapter (e.g. IBKR) behind a hardened risk layer to move from backtest → execution. See [src/src/ibkr_adapter_skeleton.py](src/src/ibkr_adapter_skeleton.py) for a starting point.
 - Add a parameter sweep harness to test many combinations (grid/random search) and persist results in `outputs/`.
