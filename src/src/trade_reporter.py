@@ -55,17 +55,7 @@ def generate_trade_report(ticker: str, trades_df: pd.DataFrame, outdir: str) -> 
     col_order = [c for c in col_order if c in trades_df.columns]
     trades_df = trades_df[col_order]
     
-    # Format currency and percentage columns
-    currency_cols = ["price_requested", "execution_price", "amount_requested", 
-                     "amount_executed", "cost_basis", "pnl", "cash_after", "avg_cost_after"]
-    for col in currency_cols:
-        if col in trades_df.columns:
-            trades_df[col] = trades_df[col].apply(lambda x: f"${x:,.2f}" if pd.notna(x) else "")
-    
-    if "pnl_pct" in trades_df.columns:
-        trades_df["pnl_pct"] = trades_df["pnl_pct"].apply(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
-    
-    # Save to CSV
+    # Save to CSV (keep numeric format for analysis)
     trades_csv = os.path.join(outdir, f"{ticker}_trades.csv")
     trades_df.to_csv(trades_csv, index=False)
     logger.info(f"Trade report generated: {trades_csv}")
