@@ -16,12 +16,12 @@ benchmark: ^IXIC
 lookback_days: 30
 bar_interval: "5m"        # Choices: 1m, 5m, 15m intervals
 
-# Capital & Position Sizing Framework (Fixed Capital Mismatch)
-initial_capital: 10000.0   # Expanded buffer to handle high-frequency scaling
-core_buy_amt: 500.0        # Macro directional foundational position size
-base_buy_shares: 3         # Intraday incremental add step (units, not cash)
-base_sell_shares: 3       # Intraday profit-taking distribution step
-inventory_floor_shares: 5  # Minimum share unit threshold to retain dividend exposure
+# Capital & Position Sizing Framework (Dollar-Based)
+initial_capital: 10000.0      # Initial trading capital
+core_buy_amt: 500.0           # Macro directional foundational position size (dollars)
+base_buy_amt: 250.0           # Intraday incremental add step (dollars, not shares)
+base_sell_amt: 250.0          # Intraday profit-taking distribution step (dollars, not shares)
+inventory_floor_amt: 100.0    # Minimum inventory threshold in dollars to retain position exposure
 
 # Execution Friction Controls (Crucial for High-Frequency Scalping)
 slippage_bps: 0.0002        # 0.02% expected execution drag per entry/exit

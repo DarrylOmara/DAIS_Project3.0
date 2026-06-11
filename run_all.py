@@ -82,9 +82,9 @@ def run_for_ticker(ticker: str, cfg: dict, benchmark_close: pd.Series, outdir: s
             beta=beta_use,
             initial_capital=cfg["initial_capital"],
             core_buy_amt=cfg["core_buy_amt"],
-            base_buy=cfg["base_buy_shares"],       # Swapped to share units
-            base_sell=cfg["base_sell_shares"],     # Swapped to share units
-            inventory_floor=cfg["inventory_floor_shares"], # Swapped to share units
+            base_buy_amt=cfg.get("base_buy_amt", 250.0),       # Dollar amount for incremental buys
+            base_sell_amt=cfg.get("base_sell_amt", 250.0),     # Dollar amount for profit-taking
+            inventory_floor_amt=cfg.get("inventory_floor_amt", 100.0),  # Minimum inventory in dollars
         )
 
         # Execute the optimized backtest loop
