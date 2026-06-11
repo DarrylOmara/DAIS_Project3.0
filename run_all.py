@@ -17,6 +17,7 @@ from src.src.report_generator import build_pdf_report
 from src.src.pptx_builder import build_presentation
 from src.src.dashboard_export import build_dashboard_html
 from src.src.docx_guide import build_docx_guide
+from src.src.trade_reporter import generate_trade_report, generate_trade_summary, format_trade_summary_for_display
 
 # ------------------------------------------------------------
 # HIGH-PERFORMANCE LOGGING INITIALIZATION
@@ -102,6 +103,12 @@ def run_for_ticker(ticker: str, cfg: dict, benchmark_close: pd.Series, outdir: s
         metrics_csv = os.path.join(ticker_outdir, f"{ticker}_metrics.csv")
         pd.DataFrame([metrics]).to_csv(metrics_csv, index=False)
 
+        # Generate trade reports
+        trades_df = engine.get_trades_dataframe()
+        trades_csv = generate_trade_report(ticker, trades_df, ticker_outdir)
+        trade_summary = generate_trade_summary(ticker, trades_df, ticker_outdir)
+        logger.info(format_trade_summary_for_display(trade_summary))
+
         # Generate diagnostic charts
         charts = make_all_charts(ticker, df, ledger, ticker_outdir)
 
@@ -115,6 +122,8 @@ def run_for_ticker(ticker: str, cfg: dict, benchmark_close: pd.Series, outdir: s
             "sell_rule_stats": getattr(engine, "sell_rule_stats", {}),
             "trade_stats": getattr(engine, "trade_stats", {}),
             "ledger_csv": ledger_csv,
+            "trades_csv": trades_csv,
+            "trade_summary": trade_summary,
             "charts": charts,
         }
 
@@ -123,7 +132,7 @@ def run_for_ticker(ticker: str, cfg: dict, benchmark_close: pd.Series, outdir: s
         return {
             "ticker": ticker, "metrics": {}, "beta_true": float("nan"),
             "sell_rule_stats": {}, "trade_stats": {}, "ledger_csv": "",
-            "charts": {}, "error": str(e),
+            "trades_csv": "", "trade_summary": {}, "charts": {}, "error": str(e),
         }
 
 # ------------------------------------------------------------
