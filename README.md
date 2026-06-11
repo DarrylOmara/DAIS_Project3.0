@@ -22,14 +22,35 @@ python run_all.py
   - `bar_interval`: intraday bar size (e.g. `1m`, `5m`, `15m`).
   - `lookback_days`: days to fetch for daily series.
   - `intraday_lookback_days`: (optional) days to fetch for intraday bars.
+  
+  **Trading Parameters (Dollar-Based Position Sizing)**
+  - `initial_capital`: starting trading capital (e.g. $10,000).
+  - `core_buy_amt`: fixed dollar amount for macro directional entry (e.g. $500).
+  - `base_buy_amt`: fixed dollar amount for incremental buys per signal (e.g. $250).
+  - `base_sell_amt`: fixed dollar amount for profit-taking per signal (e.g. $250).
+  - `inventory_floor_amt`: minimum position value in dollars before allowing more buys (e.g. $100).
+  - `beta_default`: scaling factor for buy/sell amounts (1.0 = no scaling, >1.0 = scaled up).
+  - `slippage_bps`: expected execution slippage in basis points (e.g. 0.0002 = 0.02%).
+  - `short_window`: fast EMA window (e.g. 9 bars).
+  - `long_window`: slow EMA window (e.g. 21 bars).
+  - `force_flat_at_close`: liquidate all positions before market close (true/false).
+  - `market_close_buffer_min`: minutes before close to start liquidation (e.g. 15 min).
+  
   - `data_dir`: folder for cached CSV files.
   - `output_dir`: folder for generated deliverables.
 
 **What it does (high level)**
 - Downloads intraday (preferred) or daily data for each ticker and caches to `data/{TICKER}.csv`.
 - Computes indicators (moving averages) and aligns timestamps to the benchmark.
-- Runs the `DAISTradingEngine` backtest to produce a ledger of trades and P&L.
+- Runs the `DAISTradingEngine` backtest using fixed dollar amounts for all entry/exit trades to produce a ledger of trades and P&L.
 - Produces metrics, charts, and documentation: PDF, PPTX, interactive HTML dashboard, and DOCX manual placed in `outputs/DAIS_Deliverables`.
+
+**Trading Logic (Dollar-Based)**
+- **Core Entry**: On MA20 > MA50 crossover, buy `core_buy_amt` dollars of the stock.
+- **Incremental Buys**: If price > MA20 and position value ≥ `inventory_floor_amt`, buy `base_buy_amt * beta` dollars.
+- **Profit Taking**: If price ≤ MA20 and position value > `inventory_floor_amt`, sell `base_sell_amt * beta` dollars.
+- **Hard Rules**: Never sell below MA20 (trend protection) or below average cost basis (no loss-taking).
+- **Session Close**: Liquidate all remaining positions `market_close_buffer_min` before market close.
 
 **Extending & Next Steps**
 - Use a paid intraday data provider (higher fidelity) by replacing `fetch_intraday()` in [src/src/data_fetcher.py](src/src/data_fetcher.py).
