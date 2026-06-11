@@ -1,0 +1,43 @@
+# ------------------------------------------------------------
+# DAIS Intraday Production Configuration
+# ------------------------------------------------------------
+
+# Target Intraday Execution Universe
+tickers:
+  - MSFT
+  - META
+  - STT
+  - SOXX
+  - GOOG
+benchmark: ^IXIC
+
+# High-Frequency Timeframe Configuration
+# period_years is replaced with an explicit day-range lookback for intraday bars
+lookback_days: 30
+bar_interval: "5m"        # Choices: 1m, 5m, 15m intervals
+
+# Capital & Position Sizing Framework (Fixed Capital Mismatch)
+initial_capital: 10000.0   # Expanded buffer to handle high-frequency scaling
+core_buy_amt: 500.0        # Macro directional foundational position size
+base_buy_shares: 3         # Intraday incremental add step (units, not cash)
+base_sell_shares: 3       # Intraday profit-taking distribution step
+inventory_floor_shares: 5  # Minimum share unit threshold to retain dividend exposure
+
+# Execution Friction Controls (Crucial for High-Frequency Scalping)
+slippage_bps: 0.0002        # 0.02% expected execution drag per entry/exit
+commission_per_share: 0.000 # Flat broker fees per unit (set if using a fee-charging broker)
+
+# Micro-Momentum Parameters
+beta_default: 1.0
+short_window: 9             # Fast intraday exponential trend line
+long_window: 21             # Slower intraday anchor trend line
+
+# Session Boundary Protection Rules
+force_flat_at_close: true   # Prevent holding leveraged intra-day inventory overnight
+market_close_buffer_min: 15 # Minutes before the closing bell to liquidate open shares
+
+# Operational Logging Paths
+output_dir: outputs/DAIS_Deliverables
+data_dir: data
+log_level: INFO
+max_workers: 4
