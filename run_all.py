@@ -30,7 +30,20 @@ logger = logging.getLogger("DAIS_Intraday")
 
 def load_config(config_path: str = "config.yaml"):
     with open(config_path, "r") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+
+    # --- CONFIGURATION VALIDATION ---
+    required_keys = [
+        "tickers", "benchmark", "initial_capital", "initial_investment_amt",
+        "fixed_buy_amt", "fixed_sell_amt", "max_consecutive_buys",
+        "max_total_sells", "min_remaining_inventory_pct",
+        "beta_buy_multiplier", "beta_sell_multiplier"
+    ]
+    missing = [k for k in required_keys if k not in cfg]
+    if missing:
+        raise ValueError(f"Missing required configuration keys: {', '.join(missing)}")
+
+    return cfg
 
 
 def normalize_datetime_index(index):
@@ -128,7 +141,7 @@ def run_for_ticker(ticker: str, cfg: dict, benchmark_close: pd.Series, outdir: s
         logger.info(format_trade_summary_for_display(trade_summary))
 
         # Generate diagnostic charts
-        charts = make_all_charts(ticker, df, ledger, ticker_outdir)
+        charts = make_all_charts(ticker=ticker, df=df, ledger_df=ledger, output_dir=ticker_outdir)
 
         elapsed = time.time() - start
         logger.info(f"Completed {ticker} intraday backtest [{len(df)} rows] in {elapsed:.2f}s")

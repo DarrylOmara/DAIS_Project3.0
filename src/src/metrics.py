@@ -14,10 +14,10 @@ def compute_true_beta(asset_close, benchmark_close):
     # Vectorized inner intersection lock
     df = pd.concat([asset_close, benchmark_close], axis=1).dropna()
     df.columns = ['asset', 'bench']
-    
+
     if len(df) < 20:
         return 1.0  # Fallback to standard market unit beta
-        
+
     daily = df.pct_change().dropna()
     if daily.empty:
         return 1.0
@@ -57,11 +57,11 @@ def compute_true_beta(asset_close, benchmark_close):
     # Dynamic Weight Assignment Structure
     betas = np.array([beta_ols, beta_short, beta_robust], dtype=float)
     weights = np.array([0.50, 0.30, 0.20])
-    
+
     mask = ~np.isnan(betas)
     if mask.sum() == 0:
         return 1.0
-        
+
     beta_true = np.sum(betas[mask] * weights[mask]) / np.sum(weights[mask])
     return float(beta_true)
 
@@ -75,12 +75,12 @@ def performance_metrics_from_ledger(ledger_df, price_series):
     """
     if ledger_df.empty:
         return {"total_return": 0.0, "annualized_return": 0.0, "annualized_vol": 0.0, "sharpe": 0.0, "max_drawdown": 0.0}
-        
+
     # Sort and extract total portfolio equity values
     ledger_sorted = ledger_df.sort_values('Date')
     timestamps = pd.to_datetime(ledger_sorted['Date']).to_numpy()
     equity_curve = ledger_sorted['Total_Value'].to_numpy(dtype=np.float64)
-    
+
     if len(equity_curve) < 2:
         return {"total_return": 0.0, "annualized_return": 0.0, "annualized_vol": 0.0, "sharpe": 0.0, "max_drawdown": 0.0}
 
@@ -88,18 +88,18 @@ def performance_metrics_from_ledger(ledger_df, price_series):
     initial_value = equity_curve[0]
     final_value = equity_curve[-1]
     total_return = (final_value / initial_value) - 1.0 if initial_value > 0 else 0.0
-    
+
     # UPGRADED PATCH: Calculate geometric annualized returns based on precise time differences
     duration_ns = timestamps[-1] - timestamps[0]
-    
+
     # Safely convert timedelta object variants into plain float raw nanosecond counts
     if isinstance(duration_ns, np.timedelta64):
         total_ns = float(duration_ns / np.timedelta64(1, 'ns'))
     else:
         total_ns = float(duration_ns.total_seconds() * 1_000_000_000)
-        
+
     duration_years = total_ns / (365.25 * 24 * 60 * 60 * 1_000_000_000)
-    
+
     if duration_years > 0 and initial_value > 0 and final_value > 0:
         ann_return = (final_value / initial_value) ** (1.0 / duration_years) - 1.0
     else:
@@ -107,12 +107,12 @@ def performance_metrics_from_ledger(ledger_df, price_series):
 
     # Calculate Intraday Volatility
     pct_changes = np.diff(equity_curve) / equity_curve[:-1]
-    
+
     # Track the average number of bars per day to scale volatility accurately
     unique_days = np.unique(timestamps.astype('datetime64[D]'))
     n_days = len(unique_days) if len(unique_days) > 0 else 1
     bars_per_day = len(equity_curve) / n_days
-    
+
     # Scale interval volatility to an annualized standard deviation
     interval_vol = pct_changes.std() if len(pct_changes) > 0 else 0.0
     ann_vol = interval_vol * np.sqrt(bars_per_day * 252)
@@ -120,7 +120,7 @@ def performance_metrics_from_ledger(ledger_df, price_series):
     # Sharpe Calculation assuming a standard baseline risk-free cash yield (4.0%)
     risk_free = 0.04
     excess_return = ann_return - risk_free
-    
+
     if ann_vol > 0:
         sharpe = excess_return / ann_vol
     else:

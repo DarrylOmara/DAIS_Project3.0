@@ -41,16 +41,23 @@ def run_for_ticker(ticker, spy_close_series, cfg, outdir):
     engine = DAISTradingEngine(
         beta=beta_use,
         initial_capital=cfg['initial_capital'],
-        core_buy_amt=cfg['core_buy_amt'],
-        base_buy=cfg['base_buy'],
-        base_sell=cfg['base_sell'],
-        inventory_floor=cfg['inventory_floor']
+        initial_investment_amt=cfg['initial_investment_amt'],
+        buy_amt=cfg['fixed_buy_amt'],
+        sell_amt=cfg['fixed_sell_amt'],
+        max_consecutive_buys=cfg['max_consecutive_buys'],
+        max_total_sells=cfg['max_total_sells'],
+        min_remaining_inventory_pct=cfg['min_remaining_inventory_pct'],
+        beta_buy_multiplier=cfg['beta_buy_multiplier'],
+        beta_sell_multiplier=cfg['beta_sell_multiplier'],
+        stop_loss_pct=cfg.get('stop_loss_pct'),
+        take_profit_pct=cfg.get('take_profit_pct'),
+        dynamic_sizing=cfg.get('dynamic_sizing', False)
     )
 
     # ------------------------------------------------------------
     # RUN BACKTEST
     # ------------------------------------------------------------
-    ledger = engine.run_backtest(df)
+    ledger = engine.run_backtest(df, cfg)
 
     # ------------------------------------------------------------
     # OUTPUT DIRECTORY FOR THIS TICKER
@@ -79,5 +86,7 @@ def run_for_ticker(ticker, spy_close_series, cfg, outdir):
         "ticker": ticker,
         "metrics": metrics,
         "beta_true": beta_true,
-        "ledger_csv": ledger_csv
+        "ledger_csv": ledger_csv,
+        "trade_stats": engine.trade_stats,
+        "sell_rule_stats": engine.sell_rule_stats
     }
