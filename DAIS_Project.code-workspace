@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.git": true,
+      "**/.vs": true,
+      "**/.DS_Store": true
+    },
+    "editor.formatOnSave": true,
+    "files.associations": {
+      "*.md": "markdown"
+    },
+    "yaml-with-script.dialect": "inline"
+  }
+}

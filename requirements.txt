@@ -1,0 +1,17 @@
+pandas
+numpy
+matplotlib
+plotly
+yfinance
+scipy
+statsmodels
+ib_insync
+python-pptx
+python-docx
+reportlab
+weasyprint
+jinja2
+pyyaml
+tqdm
+pillow
+scikit-learn>=1.0.0

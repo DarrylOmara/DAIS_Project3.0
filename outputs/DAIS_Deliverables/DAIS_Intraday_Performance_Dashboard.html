@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAIS Project — High Frequency Engine Analytics Dashboard</title>
+    <style>
+        :root {
+            --bg-dark: #1e293b;
+            --bg-light: #f8fafc;
+            --slate-800: #0f172a;
+            --slate-700: #334155;
+            --emerald: #10b981;
+            --crimson: #ef4444;
+            --sky-blue: #0284c7;
+            --text-main: #1e293b;
+            --border-color: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 20px;
+        }
+        header {
+            background: linear-gradient(135deg, var(--slate-800), var(--slate-700));
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 24px;
+        }
+        header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; }
+        .meta-strip { font-size: 13px; opacity: 0.85; font-weight: 500; }
+        
+        .section-title { font-size: 18px; font-weight: 700; margin: 24px 0 12px 0; color: var(--slate-800); border-left: 4px solid var(--sky-blue); padding-left: 10px; }
+        
+        /* High Performance Layout Flex Grid Containers */
+        .summary-table-container {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th { background-color: var(--bg-dark); color: white; padding: 12px; font-weight: 600; }
+        td { padding: 12px; border-bottom: 1px solid var(--border-color); color: #475569; }
+        tr:nth-child(even) td { background-color: #f1f5f9; }
+        tr:hover td { background-color: #e2e8f0; }
+        .bold-ticker { font-weight: 700; color: var(--slate-800); }
+
+        /* Asset Specific Telemetry Layout Elements */
+        .asset-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px; }
+        .card-header h3 { font-size: 18px; font-weight: 700; color: var(--sky-blue); }
+        
+        .execution-pill-box { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+        .pill { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background-color: #f1f5f9; border: 1px solid var(--border-color); }
+        .pill span { font-weight: 800; color: var(--slate-800); }
+        .pill.rejected-ma20 span { color: var(--crimson); }
+        .pill.rejected-cost span { color: var(--crimson); }
+        .pill.executed-sells span { color: var(--emerald); }
+        
+        .image-flex-container { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; }
+        .img-box { flex: 1 1 calc(33.333% - 12px); min-width: 300px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #fafafa; text-align: center; padding: 6px; }
+        .img-box img { max-width: 100%; height: auto; display: block; border-radius: 4px; margin: 0 auto; }
+        .img-label { font-size: 11px; color: #64748b; font-weight: 600; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        @media(max-width: 1024px) { .img-box { flex: 1 1 calc(50% - 8px); } }
+        @media(max-width: 768px) { .img-box { flex: 1 1 100%; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>DAIS Strategy Intraday Execution Platform</h1>
+        <div class="meta-strip">System Log Generated: 2026-06-07 | Lookback Scan Range: 30 Days | Dynamic Sampling Granularity: 5m</div>
+    </header>
+
+    <div class="section-title">Global Portfolio Performance Matrix</div>
+    <div class="summary-table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Asset Ticker</th>
+                    <th>Total Return</th>
+                    <th>Annualized Return</th>
+                    <th>Sharpe Ratio</th>
+                    <th>Maximum Drawdown</th>
+                    <th>Calculated True Beta</th>
+                    <th>Core / Base Trades Triggered</th>
+                </tr>
+            </thead>
+            <tbody>
+    
+                <tr>
+                    <td class="bold-ticker">META</td>
+                    <td style='color: var(--emerald); font-weight: 600;'>0.00%</td>
+                    <td>0.00%</td>
+                    <td><b>0.00</b></td>
+                    <td style="color: var(--crimson);">0.00%</td>
+                    <td>0.43</td>
+                    <td>0 Core / 0 Base</td>
+                </tr>
+                <tr>
+                    <td class="bold-ticker">SOXX</td>
+                    <td style='color: var(--emerald); font-weight: 600;'>0.00%</td>
+                    <td>0.00%</td>
+                    <td><b>0.00</b></td>
+                    <td style="color: var(--crimson);">0.00%</td>
+                    <td>2.55</td>
+                    <td>0 Core / 0 Base</td>
+                </tr>
+                <tr>
+                    <td class="bold-ticker">STT</td>
+                    <td style='color: var(--emerald); font-weight: 600;'>0.00%</td>
+                    <td>0.00%</td>
+                    <td><b>0.00</b></td>
+                    <td style="color: var(--crimson);">0.00%</td>
+                    <td>0.48</td>
+                    <td>0 Core / 0 Base</td>
+                </tr>
+                <tr>
+                    <td class="bold-ticker">MSFT</td>
+                    <td style='color: var(--emerald); font-weight: 600;'>0.00%</td>
+                    <td>0.00%</td>
+                    <td><b>0.00</b></td>
+                    <td style="color: var(--crimson);">0.00%</td>
+                    <td>0.39</td>
+                    <td>0 Core / 0 Base</td>
+                </tr>
+                <tr>
+                    <td class="bold-ticker">GOOG</td>
+                    <td style='color: var(--emerald); font-weight: 600;'>0.00%</td>
+                    <td>0.00%</td>
+                    <td><b>0.00</b></td>
+                    <td style="color: var(--crimson);">0.00%</td>
+                    <td>0.75</td>
+                    <td>0 Core / 0 Base</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section-title">Asset Level Execution Telemetry Streams</div>
+    
+    <div class="asset-card">
+        <div class="card-header">
+            <h3>Asset Feed Node: META</h3>
+        </div>
+        
+        <div class="execution-pill-box">
+            <div class="pill executed-sells">Executed Sells: <span>0</span></div>
+            <div class="pill">Overnight Liquidations: <span>0</span></div>
+            <div class="pill rejected-ma20">Rejected (Price &lt; MA20): <span>0</span></div>
+            <div class="pill rejected-cost">Rejected (Price &lt; Cost Basis): <span>0</span></div>
+        </div>
+
+        <div class="image-flex-container">
+            <div class="img-box">
+                <img src="./META/META_execution_topology.png" alt="META Topology" loading="lazy">
+                <div class="img-label">MA Execution Strategy Topology</div>
+            </div>
+            <div class="img-box">
+                <img src="./META/META_equity_curve.png" alt="META Equity Curve" loading="lazy">
+                <div class="img-label">Accumulated Equity Growth Curve</div>
+            </div>
+            <div class="img-box">
+                <img src="./META/META_inventory_density.png" alt="META Inventory Density" loading="lazy">
+                <div class="img-label">Intraday Share Inventory Allocation Density</div>
+            </div>
+        </div>
+    </div>
+    <div class="asset-card">
+        <div class="card-header">
+            <h3>Asset Feed Node: SOXX</h3>
+        </div>
+        
+        <div class="execution-pill-box">
+            <div class="pill executed-sells">Executed Sells: <span>0</span></div>
+            <div class="pill">Overnight Liquidations: <span>0</span></div>
+            <div class="pill rejected-ma20">Rejected (Price &lt; MA20): <span>0</span></div>
+            <div class="pill rejected-cost">Rejected (Price &lt; Cost Basis): <span>0</span></div>
+        </div>
+
+        <div class="image-flex-container">
+            <div class="img-box">
+                <img src="./SOXX/SOXX_execution_topology.png" alt="SOXX Topology" loading="lazy">
+                <div class="img-label">MA Execution Strategy Topology</div>
+            </div>
+            <div class="img-box">
+                <img src="./SOXX/SOXX_equity_curve.png" alt="SOXX Equity Curve" loading="lazy">
+                <div class="img-label">Accumulated Equity Growth Curve</div>
+            </div>
+            <div class="img-box">
+                <img src="./SOXX/SOXX_inventory_density.png" alt="SOXX Inventory Density" loading="lazy">
+                <div class="img-label">Intraday Share Inventory Allocation Density</div>
+            </div>
+        </div>
+    </div>
+    <div class="asset-card">
+        <div class="card-header">
+            <h3>Asset Feed Node: STT</h3>
+        </div>
+        
+        <div class="execution-pill-box">
+            <div class="pill executed-sells">Executed Sells: <span>0</span></div>
+            <div class="pill">Overnight Liquidations: <span>0</span></div>
+            <div class="pill rejected-ma20">Rejected (Price &lt; MA20): <span>0</span></div>
+            <div class="pill rejected-cost">Rejected (Price &lt; Cost Basis): <span>0</span></div>
+        </div>
+
+        <div class="image-flex-container">
+            <div class="img-box">
+                <img src="./STT/STT_execution_topology.png" alt="STT Topology" loading="lazy">
+                <div class="img-label">MA Execution Strategy Topology</div>
+            </div>
+            <div class="img-box">
+                <img src="./STT/STT_equity_curve.png" alt="STT Equity Curve" loading="lazy">
+                <div class="img-label">Accumulated Equity Growth Curve</div>
+            </div>
+            <div class="img-box">
+                <img src="./STT/STT_inventory_density.png" alt="STT Inventory Density" loading="lazy">
+                <div class="img-label">Intraday Share Inventory Allocation Density</div>
+            </div>
+        </div>
+    </div>
+    <div class="asset-card">
+        <div class="card-header">
+            <h3>Asset Feed Node: MSFT</h3>
+        </div>
+        
+        <div class="execution-pill-box">
+            <div class="pill executed-sells">Executed Sells: <span>0</span></div>
+            <div class="pill">Overnight Liquidations: <span>0</span></div>
+            <div class="pill rejected-ma20">Rejected (Price &lt; MA20): <span>0</span></div>
+            <div class="pill rejected-cost">Rejected (Price &lt; Cost Basis): <span>0</span></div>
+        </div>
+
+        <div class="image-flex-container">
+            <div class="img-box">
+                <img src="./MSFT/MSFT_execution_topology.png" alt="MSFT Topology" loading="lazy">
+                <div class="img-label">MA Execution Strategy Topology</div>
+            </div>
+            <div class="img-box">
+                <img src="./MSFT/MSFT_equity_curve.png" alt="MSFT Equity Curve" loading="lazy">
+                <div class="img-label">Accumulated Equity Growth Curve</div>
+            </div>
+            <div class="img-box">
+                <img src="./MSFT/MSFT_inventory_density.png" alt="MSFT Inventory Density" loading="lazy">
+                <div class="img-label">Intraday Share Inventory Allocation Density</div>
+            </div>
+        </div>
+    </div>
+    <div class="asset-card">
+        <div class="card-header">
+            <h3>Asset Feed Node: GOOG</h3>
+        </div>
+        
+        <div class="execution-pill-box">
+            <div class="pill executed-sells">Executed Sells: <span>0</span></div>
+            <div class="pill">Overnight Liquidations: <span>0</span></div>
+            <div class="pill rejected-ma20">Rejected (Price &lt; MA20): <span>0</span></div>
+            <div class="pill rejected-cost">Rejected (Price &lt; Cost Basis): <span>0</span></div>
+        </div>
+
+        <div class="image-flex-container">
+            <div class="img-box">
+                <img src="./GOOG/GOOG_execution_topology.png" alt="GOOG Topology" loading="lazy">
+                <div class="img-label">MA Execution Strategy Topology</div>
+            </div>
+            <div class="img-box">
+                <img src="./GOOG/GOOG_equity_curve.png" alt="GOOG Equity Curve" loading="lazy">
+                <div class="img-label">Accumulated Equity Growth Curve</div>
+            </div>
+            <div class="img-box">
+                <img src="./GOOG/GOOG_inventory_density.png" alt="GOOG Inventory Density" loading="lazy">
+                <div class="img-label">Intraday Share Inventory Allocation Density</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    
