@@ -13,15 +13,21 @@ benchmark: ^IXIC
 
 # High-Frequency Timeframe Configuration
 # period_years is replaced with an explicit day-range lookback for intraday bars
+# Intraday bars are preferred for high-frequency signal and beta alignment.
+# Daily bars are only used as a fallback when intraday retrieval is unavailable.
 lookback_days: 30
 bar_interval: "5m"        # Choices: 1m, 5m, 15m intervals
 
-# Capital & Position Sizing Framework (Dollar-Based)
-initial_capital: 10000.0      # Initial trading capital
-core_buy_amt: 500.0           # Macro directional foundational position size (dollars)
-base_buy_amt: 250.0           # Intraday incremental add step (dollars, not shares)
-base_sell_amt: 250.0          # Intraday profit-taking distribution step (dollars, not shares)
-inventory_floor_amt: 100.0    # Minimum inventory threshold in dollars to retain position exposure
+# Capital & Position Sizing Framework (Dollar-Based, Per-Ticker)
+initial_capital: 1000.0           # Available capital per ticker
+initial_investment_amt: 100.0     # Initial position size per ticker
+fixed_buy_amt: 10.0               # Cash amount per buy trade
+fixed_sell_amt: 20.0              # Cash amount per sell trade
+max_consecutive_buys: 4           # Guard rail on stacked buys
+max_total_sells: 3                # Guard rail on total sell events
+min_remaining_inventory_pct: 0.40 # Keep at least 40% of initial investment value in inventory
+beta_buy_multiplier: -0.5         # Buy when price change <= beta * multiplier
+beta_sell_multiplier: 2.0         # Sell when price change >= beta * multiplier
 
 # Execution Friction Controls (Crucial for High-Frequency Scalping)
 slippage_bps: 0.0002        # 0.02% expected execution drag per entry/exit

@@ -6,15 +6,32 @@ class DAISTradingEngine:
     DAIS: Dynamic Asymmetric Inventory Strategy
     High-Frequency Intraday Production Engine
     Dollar-based position sizing: all trades in fixed dollar amounts.
+    Includes a forced end-of-session flattening rule to avoid overnight inventory risk.
     Optimized via NumPy array extraction for near-instant execution.
     """
-    def __init__(self, beta, initial_capital, core_buy_amt, base_buy_amt, base_sell_amt, inventory_floor_amt):
+    def __init__(
+        self,
+        beta,
+        initial_capital,
+        initial_investment_amt,
+        buy_amt,
+        sell_amt,
+        max_consecutive_buys,
+        max_total_sells,
+        min_remaining_inventory_pct,
+        beta_buy_multiplier,
+        beta_sell_multiplier,
+    ):
         self.beta = float(beta)
         self.initial_capital = float(initial_capital)
-        self.core_buy_amt = float(core_buy_amt)           # Dollar amount for core entry
-        self.base_buy_amt = float(base_buy_amt)           # Dollar amount for incremental buys
-        self.base_sell_amt = float(base_sell_amt)         # Dollar amount for profit-taking
-        self.inventory_floor_amt = float(inventory_floor_amt)  # Minimum inventory value in dollars
+        self.initial_investment_amt = float(initial_investment_amt)
+        self.buy_amt = float(buy_amt)
+        self.sell_amt = float(sell_amt)
+        self.max_consecutive_buys = int(max_consecutive_buys)
+        self.max_total_sells = int(max_total_sells)
+        self.min_remaining_inventory_pct = float(min_remaining_inventory_pct)
+        self.beta_buy_multiplier = float(beta_buy_multiplier)
+        self.beta_sell_multiplier = float(beta_sell_multiplier)
         
         # Reset tracking metrics
         self.cash = self.initial_capital
@@ -22,13 +39,22 @@ class DAISTradingEngine:
         self.total_cost = 0.0             # Total $ spent on current inventory
         self.average_cost = 0.0           # Average $/share of current inventory
         self.inventory_value = 0.0        # Current market value of inventory
+        self.consecutive_buys = 0
+        self.total_sells = 0
+        self.initial_investment_cost = 0.0
         
         # Trade ledger: explicit record of all executed trades
         self.trades = []  # List of dicts with trade details
         
         # Performance trace counters
-        self.sell_rule_stats = {"rejected_ma20": 0, "rejected_avg_cost": 0, "executed_sells": 0, "overnight_liquidations": 0}
-        self.trade_stats = {"core_buys": 0, "base_buys": 0}
+        self.sell_rule_stats = {
+            "rejected_ma20": 0,
+            "rejected_avg_cost": 0,
+            "rejected_inventory_floor": 0,
+            "executed_sells": 0,
+            "overnight_liquidations": 0,
+        }
+        self.trade_stats = {"core_buys": 0, "base_buys": 0, "buy_signals": 0, "sell_signals": 0}
 
     def _execute_buy(self, timestamp, price, buy_amt_dollars, slippage_bps, trade_type="base"):
         """
@@ -75,10 +101,15 @@ class DAISTradingEngine:
             "avg_cost_after": self.average_cost,
         })
         
+        if self.initial_investment_cost <= 0 and trade_type == "core":
+            self.initial_investment_cost = cost
+        
         if trade_type == "core":
             self.trade_stats["core_buys"] += 1
         else:
             self.trade_stats["base_buys"] += 1
+        self.trade_stats["buy_signals"] += 1
+        self.consecutive_buys += 1
         return True
 
     def _execute_sell(self, timestamp, price, sell_amt_dollars, ma20, slippage_bps, force_flat=False):
@@ -91,8 +122,8 @@ class DAISTradingEngine:
             sell_amt_dollars: Dollar amount to sell (ignored if force_flat=True)
             ma20: MA20 trend line (for rule-based rejection)
             slippage_bps: Execution slippage in basis points
-            force_flat: If True, liquidate all inventory at market
-        
+            force_flat: If True, liquidate all inventory at market as a forced end-of-session exit
+
         Returns:
             bool: True if sell executed, False if rejected or no inventory
         """
@@ -113,11 +144,14 @@ class DAISTradingEngine:
                 self.sell_rule_stats["rejected_avg_cost"] += 1
                 return False
             
-            # Calculate shares to sell based on dollar amount
+            # Sell fixed cash amount, capped by inventory value
             shares_to_sell = int(sell_amt_dollars / execution_price)
-            shares_to_sell = min(shares_to_sell, self.inventory)
+            available_shares = self.inventory
+            if shares_to_sell > available_shares:
+                shares_to_sell = available_shares
         else:
-            # Force flat: liquidate all inventory at market
+            # Force flat: liquidate all inventory at market as an overnight-risk reduction exit.
+            # This bypasses the normal MA20 and average cost sell screens because the session is closing.
             shares_to_sell = self.inventory
         
         if shares_to_sell <= 0:
@@ -131,12 +165,14 @@ class DAISTradingEngine:
         self.cash += revenue
         self.inventory -= shares_to_sell
         self.total_cost -= self.average_cost * shares_to_sell
+        self.total_sells += 1
         
         if self.inventory > 0:
             self.average_cost = self.total_cost / self.inventory
         else:
             self.average_cost = 0.0
             self.total_cost = 0.0
+            self.initial_investment_cost = 0.0
         
         # Record trade
         self.trades.append({
@@ -161,6 +197,7 @@ class DAISTradingEngine:
             self.sell_rule_stats["overnight_liquidations"] += 1
         else:
             self.sell_rule_stats["executed_sells"] += 1
+        self.trade_stats["sell_signals"] += 1
         return True
 
     def run_backtest(self, df, cfg):
@@ -201,6 +238,7 @@ class DAISTradingEngine:
                 
                 # Check if current timestamp falls inside the session liquidation window (e.g., after 15:45)
                 if minutes_past_midnight >= (15 * 60 + (60 - buffer_min)) and self.inventory > 0:
+                    # Forced end-of-day exit: liquidate all inventory to avoid overnight exposure.
                     self._execute_sell(timestamps[i], price, self.inventory, ma20, slippage_bps, force_flat=True)
                     
                     total_value = self.cash + (self.inventory * price)
@@ -210,20 +248,42 @@ class DAISTradingEngine:
                     })
                     continue
 
-            # --- DIRECTIONAL BUY CONDITION TRACK ---
-            # Trigger macro core entry on standard bullish crossover
-            if prev_ma20 < prev_ma50 and ma20 >= ma50:
-                self._execute_buy(timestamps[i], price, self.core_buy_amt, slippage_bps, trade_type="core")
+            # --- DIRECTIONAL BUY/SELL CONDITION TRACK ---
+            change_pct = (price - prices[i-1]) / prices[i-1] if prices[i-1] > 0 else 0.0
+            beta_threshold_buy = self.beta_buy_multiplier * self.beta
+            beta_threshold_sell = self.beta_sell_multiplier * self.beta
             
-            # Trigger high-speed intraday breakout scaling
-            elif price > ma20 and (self.inventory * price) >= self.inventory_floor_amt:
-                scaled_buy_amt = self.base_buy_amt * self.beta
-                self._execute_buy(timestamps[i], price, scaled_buy_amt, slippage_bps, trade_type="base")
-
-            # --- DIRECTIONAL TAKE-PROFIT SELL TRACK ---
-            elif price <= ma20 and (self.inventory * price) > self.inventory_floor_amt:
-                scaled_sell_amt = self.base_sell_amt * self.beta
-                self._execute_sell(timestamps[i], price, scaled_sell_amt, ma20, slippage_bps, force_flat=False)
+            buy_amount = self.initial_investment_amt if self.inventory == 0 else self.buy_amt
+            buy_type = "core" if self.inventory == 0 else "base"
+            
+            can_buy = (
+                self.consecutive_buys < self.max_consecutive_buys and
+                self.cash >= buy_amount and
+                (self.inventory * price + buy_amount) <= self.initial_capital
+            )
+            
+            can_sell = (
+                self.total_sells < self.max_total_sells and
+                self.inventory > 0
+            )
+            
+            buy_executed = False
+            sell_executed = False
+            
+            # Buy if price change falls below negative beta threshold
+            if change_pct <= beta_threshold_buy and can_buy:
+                buy_executed = self._execute_buy(timestamps[i], price, buy_amount, slippage_bps, trade_type=buy_type)
+            
+            # Sell if price change exceeds positive beta threshold and inventory guard allows it
+            elif change_pct >= beta_threshold_sell and can_sell and self.initial_investment_cost > 0:
+                remaining_value = max((self.inventory * price) - self.sell_amt, 0.0)
+                min_inventory_value = self.initial_investment_cost * self.min_remaining_inventory_pct
+                
+                if remaining_value >= min_inventory_value:
+                    sell_executed = self._execute_sell(timestamps[i], price, self.sell_amt, ma20, slippage_bps, force_flat=False)
+            
+            if sell_executed:
+                self.consecutive_buys = 0
 
             # Record high-speed historical telemetry tracking points
             total_value = self.cash + (self.inventory * price)
